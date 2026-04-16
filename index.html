@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Tiebreaker | AI Powered</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .gradient-bg { background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans">
+
+<div id="app" class="max-w-4xl mx-auto py-12 px-4">
+    <header class="text-center mb-10">
+        <h1 class="text-6xl font-black text-slate-900 mb-2 tracking-tighter">Fahad's AI Tiebreaker<span class="text-indigo-600">.</span></h1>
+        <p class="text-slate-500 text-lg uppercase tracking-widest font-bold text-xs mb-4">AI Logic Engine</p>
+        <button @click="showAbout = true" class="inline-flex items-center gap-2 bg-white border border-slate-200 text-slate-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:bg-slate-50 transition uppercase tracking-widest">
+            <i class="fas fa-info-circle text-indigo-500"></i> About the Project
+        </button>
+    </header>
+
+    <!-- About Modal -->
+    <transition name="fade">
+        <div v-if="showAbout" class="fixed inset-0 z-50 flex items-center justify-center px-4">
+            <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" @click="showAbout = false"></div>
+            <div class="relative bg-white rounded-3xl shadow-2xl p-10 max-w-lg w-full z-10">
+                <button @click="showAbout = false" class="absolute top-5 right-5 text-slate-400 hover:text-slate-700 text-xl transition">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="mb-6">
+                    <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">About</span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 mb-3">Fahad's AI Tiebreaker</h2>
+                <p class="text-slate-600 leading-relaxed mb-6">
+                    A decision-support tool powered by <strong>Llama-3</strong> via the Groq API. Enter any dilemma and the AI analyses it across three structured frameworks — Pros &amp; Cons, Comparison Table, and SWOT — before delivering a confident final verdict.
+                </p>
+                <ul class="space-y-3 text-sm text-slate-600 mb-8">
+                    <li class="flex items-center gap-3"><i class="fas fa-brain text-indigo-500 w-4"></i> <strong>Model:</strong> Llama-3.1-8B (Groq)</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-server text-indigo-500 w-4"></i> <strong>Backend:</strong> Node.js + Express</li>
+                    <li class="flex items-center gap-3"><i class="fab fa-vuejs text-indigo-500 w-4"></i> <strong>Frontend:</strong> Vue.js 3</li>
+                    <li class="flex items-center gap-3"><i class="fas fa-lock text-indigo-500 w-4"></i> <strong>Security:</strong> API key stored server-side</li>
+                </ul>
+                <p class="text-xs text-slate-400 border-t border-slate-100 pt-4">Developed by Fahad &mdash; A Decision Intelligence Project</p>
+            </div>
+        </div>
+    </transition>
+
+    <section class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-slate-200">
+        <textarea 
+            v-model="userQuery" 
+            class="w-full p-5 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:border-indigo-500 focus:outline-none text-xl mb-6"
+            rows="3"
+            placeholder="e.g. Should I buy a house or a car?">
+        </textarea>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <button @click="analyze('pros-cons')" class="bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg">Pros & Cons</button>
+            <button @click="analyze('table')" class="bg-slate-800 text-white py-4 rounded-xl font-bold hover:bg-slate-900 transition shadow-lg">Comparison Table</button>
+            <button @click="analyze('swot')" class="bg-slate-800 text-white py-4 rounded-xl font-bold hover:bg-slate-900 transition shadow-lg">SWOT Analysis</button>
+        </div>
+    </section>
+
+    <div v-if="loading" class="text-center py-12">
+        <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p class="text-slate-400 font-bold animate-pulse text-xs">CONSULTING THE AI...</p>
+    </div>
+
+    <transition name="fade">
+        <div v-if="result && !loading" class="space-y-6">
+            <!-- PROS & CONS -->
+            <div v-if="mode === 'pros-cons'" class="grid md:grid-cols-2 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-emerald-500">
+                    <h3 class="text-emerald-600 font-bold mb-4 uppercase text-xs">Pros</h3>
+                    <ul class="space-y-3">
+                        <li v-for="pro in result.pros" :key="pro" class="text-slate-700 font-medium">• {{ pro }}</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow border-t-4 border-rose-500">
+                    <h3 class="text-rose-600 font-bold mb-4 uppercase text-xs">Cons</h3>
+                    <ul class="space-y-3">
+                        <li v-for="con in result.cons" :key="con" class="text-slate-700 font-medium">• {{ con }}</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TABLE -->
+            <div v-if="mode === 'table'" class="bg-white rounded-2xl shadow overflow-hidden border">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-900 text-white font-bold text-xs uppercase">
+                        <tr><th class="p-4">Factor</th><th class="p-4">Option A</th><th class="p-4">Option B</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr v-for="row in result.tableData" :key="row.factor">
+                            <td class="p-4 font-bold text-slate-800">{{ row.factor }}</td>
+                            <td class="p-4 text-slate-600">{{ row.optA }}</td>
+                            <td class="p-4 text-slate-600">{{ row.optB }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- SWOT -->
+            <div v-if="mode === 'swot'" class="grid grid-cols-2 gap-4">
+                <div v-for="(items, key) in result.swot" :key="key" class="bg-white p-6 rounded-2xl shadow border">
+                    <h3 class="font-black uppercase text-xs text-indigo-600 mb-2">{{ key }}</h3>
+                    <ul class="text-sm text-slate-600 space-y-1"><li v-for="item in items" :key="item">• {{ item }}</li></ul>
+                </div>
+            </div>
+
+            <!-- VERDICT -->
+            <div class="gradient-bg text-white p-10 rounded-3xl shadow-2xl">
+                <h3 class="text-indigo-300 font-black uppercase tracking-widest text-xs mb-2">Final Verdict</h3>
+                <p class="text-3xl font-light italic leading-snug mb-8">"{{ result.verdict }}"</p>
+                <div class="text-xs font-bold opacity-50 border-t border-slate-700 pt-4">CONFIDENCE: {{ result.confidence }}%</div>
+            </div>
+        </div>
+    </transition>
+</div>
+
+<footer class="text-center py-8 text-slate-400 text-xs">
+    Developed by Fahad &ndash; A Decision Intelligence Project using Llama-3 and Vue.js
+</footer>
+
+<script>
+    const { createApp } = Vue
+    createApp({
+        data() {
+            return {
+                userQuery: '',
+                loading: false,
+                mode: '',
+                result: null,
+                showAbout: false,
+            }
+        },
+        methods: {
+            async analyze(mode) {
+                if (!this.userQuery) return alert("Please enter your dilemma!");
+                
+                this.loading = true;
+                this.mode = mode;
+                this.result = null;
+
+                try {
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode, query: this.userQuery })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) throw new Error(data.error || 'Server error');
+
+                    this.result = data;
+                } catch (error) {
+                    alert("Error: " + error.message);
+                } finally {
+                    this.loading = false;
+                }
+            }
+        }
+    }).mount('#app')
+</script>
+</body>
+</html>
